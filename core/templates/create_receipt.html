@@ -1,0 +1,61 @@
+<h2>Create Receipt</h2>
+
+<form method="POST">
+  {% csrf_token %}
+  
+  <input type="text" name="title" placeholder="Receipt name" required>
+  <input type="number" name="total" placeholder="Total amount" required>
+  <label>Pick date & time:</label>
+  <input type="datetime-local" id="receipt_time" name="receipt_time">
+  <button type="button" onclick="setNow()">now</button>
+  <script>
+  function setNow() {
+    const input = document.getElementById('receipt_time'),
+    now = new Date(), offset = now.getTimezoneOffset(),
+    local = new Date(now.getTime() - (offset * 60000)),
+    formatted = local.toISOString().slice(0,16);
+    input.value = formatted;
+    }
+
+window.addEventListener('DOMContentLoaded', setNow);
+</script>
+  <h3>Participants:</h3>
+    {% for user in users %}
+    <div>
+        <input type="checkbox" name="participants" value="{{ user.id }}">
+        {{ user.username }}
+
+        <!-- Custom amount -->
+        <input type="number" step="0.01" name="amount_{{ user.id }}" placeholder="Amount">
+
+        <!-- Percentage -->
+        <input type="number" step="0.01" name="percent_{{ user.id }}" placeholder="%">
+    </div>
+    {% endfor %}
+  
+  <label>Who paid?</label>
+  <select name="payer">
+    {% for user in users %}
+      <option value="{{ user.id }}">{{ user.username }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit">Create</button>
+</form>
+
+<label>Split type:</label>
+<select name="split_type" id="split_type">
+  <option value="equal">Equal</option>
+  <option value="custom">Custom</option>
+  <option value="percentage">Percentage</option>
+</select>
+
+<div id="split_inputs">
+  {% for user in users %}
+    <div>
+      {{ user.username }}:
+      <input type="number" name="amount_{{ user.id }}" placeholder="Amount">
+      <input type="number" name="percent_{{ user.id }}" placeholder="%">
+    </div>
+  {% endfor %}
+</div>

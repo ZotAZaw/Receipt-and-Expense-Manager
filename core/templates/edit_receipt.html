@@ -1,0 +1,24 @@
+<h2>Edit Receipt</h2>
+
+<form method="POST">
+  {% csrf_token %}
+
+  <input type="text" name="title" value="{{ receipt.title }}">
+  <input type="number" name="total" value="{{ receipt.total_amount }}">
+
+  <h3>Participants</h3>
+
+  {% for p in participants %}
+    <div>
+      {{ p.user.username }}
+
+      Paid:
+      <input type="number" step="0.01" name="paid_{{ p.user.id }}" value="{{ p.amount_paid }}">
+
+      Owes:
+      <input type="number" step="0.01" name="owed_{{ p.user.id }}" value="{{ p.amount_owed }}">
+    </div>
+  {% endfor %}
+
+  <button type="submit">Save</button>
+</form>

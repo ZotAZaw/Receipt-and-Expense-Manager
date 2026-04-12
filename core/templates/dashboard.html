@@ -1,0 +1,21 @@
+<h2>Receipts</h2>
+
+<a href="{% url 'create_receipt' %}">+ Create Receipt</a>
+
+<ul>
+  {% for r in receipts %}
+    <li>
+      <a href="{% url 'receipt_detail' r.id %}">
+        {{ r.title }} - {{ r.total_amount }}
+      </a>
+    </li>
+  {% empty %}
+    <li>No receipts yet</li>
+  {% endfor %}
+</ul>
+
+<br>
+<form method="POST" action="{% url 'logout' %}">
+  {% csrf_token %}
+  <button type="submit">Logout</button>
+</form>
