@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -24,11 +24,16 @@ export const Route = createFileRoute("/_authenticated/groups")({
 });
 
 function GroupsPage() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+
+  if (pathname !== "/groups") {
+    return <Outlet />;
+  }
 
   const { data: groups = [], isLoading } = useQuery({
     queryKey: ["groups", user?.id],

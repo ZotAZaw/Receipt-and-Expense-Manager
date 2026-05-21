@@ -23,6 +23,10 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   beforeLoad: async () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const { data } = await supabase.auth.getSession();
     if (data.session) throw redirect({ to: "/dashboard" });
   },
