@@ -243,14 +243,27 @@ function SendPaymentDialog() {
   });
 
   const { data: members = [] } = useQuery({
-    queryKey: ["group-members-min", groupId],
+    queryKey: ["group-members-min", groupId, user?.id],
     enabled: !!groupId,
     queryFn: async () => {
-      const { data } = await supabase
+      // No FK from group_members.user_id -> profiles, so PostgREST can't embed
+      // profiles. Fetch members then resolve names in a second query.
+      const { data: gm, error } = await supabase
         .from("group_members")
-        .select("user_id, profiles(display_name)")
+        .select("user_id")
         .eq("group_id", groupId);
-      return (data ?? []).filter((m) => m.user_id !== user?.id);
+      if (error) throw error;
+      const ids = (gm ?? []).map((m) => m.user_id).filter((id) => id !== user?.id);
+      if (ids.length === 0) return [] as Array<{ user_id: string; display_name: string }>;
+      const { data: profs, error: pErr } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", ids);
+      if (pErr) throw pErr;
+      return (profs ?? []).map((p) => ({
+        user_id: p.id,
+        display_name: p.display_name ?? "?",
+      }));
     },
   });
 
@@ -311,14 +324,11 @@ function SendPaymentDialog() {
                 <SelectValue placeholder="Chọn người nhận" />
               </SelectTrigger>
               <SelectContent>
-                {members.map((m) => {
-                  const p = m.profiles as unknown as { display_name: string } | null;
-                  return (
-                    <SelectItem key={m.user_id} value={m.user_id}>
-                      {p?.display_name}
-                    </SelectItem>
-                  );
-                })}
+                {members.map((m) => (
+                  <SelectItem key={m.user_id} value={m.user_id}>
+                    {m.display_name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

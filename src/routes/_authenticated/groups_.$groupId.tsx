@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -23,6 +23,17 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, ArrowLeft, Trash2, UserPlus, Receipt } from "lucide-react";
@@ -31,7 +42,7 @@ import { toast } from "sonner";
 import { formatVND, formatDate, initials } from "@/lib/format";
 import { computeBalances, minimizeTransfers } from "@/lib/debt-math";
 
-export const Route = createFileRoute("/_authenticated/groups/$groupId")({
+export const Route = createFileRoute("/_authenticated/groups_/$groupId")({
   component: GroupDetail,
 });
 
@@ -274,8 +285,100 @@ function GroupDetail() {
               );
             })}
           </div>
+
+          {group?.owner_id === user?.id && (
+            <DangerZone
+              groupId={groupId}
+              groupName={group?.name ?? "nhóm này"}
+              settled={transfers.length === 0}
+            />
+          )}
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function DangerZone({
+  groupId,
+  groupName,
+  settled,
+}: {
+  groupId: string;
+  groupName: string;
+  settled: boolean;
+}) {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+
+  const del = useMutation({
+    mutationFn: async () => {
+      // Delete in FK dependency order (works whether or not FKs cascade):
+      // bill_splits -> bills -> payments -> group_members -> group.
+      const { data: billRows, error: bErr } = await supabase
+        .from("bills")
+        .select("id")
+        .eq("group_id", groupId);
+      if (bErr) throw bErr;
+      const billIds = (billRows ?? []).map((b) => b.id);
+      if (billIds.length) {
+        const { error } = await supabase.from("bill_splits").delete().in("bill_id", billIds);
+        if (error) throw error;
+      }
+      const { error: e1 } = await supabase.from("bills").delete().eq("group_id", groupId);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("payments").delete().eq("group_id", groupId);
+      if (e2) throw e2;
+      const { error: e3 } = await supabase.from("group_members").delete().eq("group_id", groupId);
+      if (e3) throw e3;
+      const { error: e4 } = await supabase.from("groups").delete().eq("id", groupId);
+      if (e4) throw e4;
+    },
+    onSuccess: () => {
+      toast.success("Đã xóa nhóm");
+      qc.invalidateQueries({ queryKey: ["groups"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-groups"] });
+      navigate({ to: "/groups" });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Không thể xóa nhóm"),
+  });
+
+  return (
+    <div className="border border-destructive/40 rounded-xl p-5 bg-destructive/5">
+      <h3 className="font-semibold text-destructive mb-1">Khu vực nguy hiểm</h3>
+      <p className="text-sm text-muted-foreground mb-4">
+        Xóa nhóm sẽ xóa vĩnh viễn toàn bộ hóa đơn, công nợ và thanh toán của nhóm. Hành động này
+        không thể hoàn tác.
+      </p>
+      {!settled && (
+        <p className="text-sm text-destructive mb-3">
+          Chỉ có thể xóa khi mọi thành viên đã cân bằng công nợ (không còn ai nợ ai).
+        </p>
+      )}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" disabled={!settled || del.isPending}>
+            <Trash2 className="size-4" /> Xóa nhóm
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa nhóm "{groupName}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Toàn bộ hóa đơn, công nợ và thanh toán của nhóm sẽ bị xóa vĩnh viễn. Bạn chắc chắn?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => del.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Xóa vĩnh viễn
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

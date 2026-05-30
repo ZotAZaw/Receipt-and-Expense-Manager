@@ -30,13 +30,22 @@ function HistoryPage() {
     queryKey: ["history-bills", groupIds.join(",")],
     enabled: groupIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
+      // No bills.paid_by -> profiles FK, so PostgREST can't embed the payer.
+      // Fetch bills, then resolve payer names in a second query.
+      const { data, error } = await supabase
         .from("bills")
-        .select("*, groups(name), profiles!bills_paid_by_fkey(display_name)")
+        .select("*, groups(name)")
         .in("group_id", groupIds)
         .order("bill_date", { ascending: false })
         .limit(100);
-      return data ?? [];
+      if (error) throw error;
+      const rows = data ?? [];
+      const payerIds = [...new Set(rows.map((b) => b.paid_by).filter(Boolean) as string[])];
+      const { data: profs } = payerIds.length
+        ? await supabase.from("profiles").select("id, display_name").in("id", payerIds)
+        : { data: [] as { id: string; display_name: string }[] };
+      const nameById = new Map((profs ?? []).map((p) => [p.id, p.display_name]));
+      return rows.map((b) => ({ ...b, payer_name: b.paid_by ? nameById.get(b.paid_by) ?? "?" : null }));
     },
   });
 
@@ -73,8 +82,7 @@ function HistoryPage() {
                     <div className="font-medium">{b.title}</div>
                     <div className="text-xs text-muted-foreground">
                       {(b.groups as { name: string } | null)?.name} · {formatDate(b.bill_date)}
-                      {b.paid_by &&
-                        ` · ${(b.profiles as unknown as { display_name: string } | null)?.display_name} trả`}
+                      {b.payer_name && ` · ${b.payer_name} trả`}
                     </div>
                   </div>
                   <div className="font-semibold">{formatVND(Number(b.total_amount))}</div>

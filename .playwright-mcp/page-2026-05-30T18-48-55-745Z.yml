@@ -1,0 +1,52 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ₫
+        - generic [ref=e6]: ChiaTien
+      - generic [ref=e7]:
+        - heading "Chia hóa đơn dễ dàng cho cả nhóm" [level=2] [ref=e8]
+        - paragraph [ref=e9]: Tạo nhóm, ghi nhận chi tiêu, để hệ thống tự tính ai nợ ai. Không còn cảnh nhắc tiền ngại ngùng.
+      - paragraph [ref=e10]: © 2026 ChiaTien
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Tạo tài khoản" [level=1] [ref=e14]
+        - paragraph [ref=e15]: Bắt đầu quản lý chi tiêu nhóm của bạn
+      - button "Tiếp tục với Google" [ref=e16] [cursor=pointer]:
+        - img
+        - text: Tiếp tục với Google
+      - generic [ref=e19]: hoặc
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - text: Tên hiển thị
+          - textbox "Tên hiển thị" [ref=e23]:
+            - /placeholder: Nguyễn Văn A
+            - text: Verify Bot
+        - generic [ref=e24]:
+          - text: Email
+          - textbox "Email" [ref=e25]:
+            - /placeholder: ban@email.com
+            - text: chiatien.qa.k9z2@gmail.com
+        - generic [ref=e26]:
+          - text: Mật khẩu
+          - textbox "Mật khẩu" [ref=e27]:
+            - /placeholder: Tạo mật khẩu mạnh
+            - text: Qz7!mVx94Lp2Rt
+          - list [ref=e28]:
+            - listitem [ref=e29]:
+              - img [ref=e47]
+              - text: Tối thiểu 8 ký tự
+            - listitem [ref=e33]:
+              - img [ref=e49]
+              - text: Có chữ hoa (A-Z)
+            - listitem [ref=e37]:
+              - img [ref=e51]
+              - text: Có chữ thường (a-z)
+            - listitem [ref=e41]:
+              - img [ref=e53]
+              - text: Có chữ số (0-9)
+        - button "Đăng ký" [ref=e55] [cursor=pointer]
+      - paragraph [ref=e45]:
+        - text: Đã có tài khoản?
+        - button "Đăng nhập" [ref=e46]
+  - region "Notifications alt+T"

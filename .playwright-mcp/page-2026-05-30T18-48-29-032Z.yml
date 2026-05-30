@@ -1,0 +1,31 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ₫
+        - generic [ref=e6]: ChiaTien
+      - generic [ref=e7]:
+        - heading "Chia hóa đơn dễ dàng cho cả nhóm" [level=2] [ref=e8]
+        - paragraph [ref=e9]: Tạo nhóm, ghi nhận chi tiêu, để hệ thống tự tính ai nợ ai. Không còn cảnh nhắc tiền ngại ngùng.
+      - paragraph [ref=e10]: © 2026 ChiaTien
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Đăng nhập" [level=1] [ref=e14]
+        - paragraph [ref=e15]: Chào mừng bạn quay lại
+      - button "Tiếp tục với Google" [ref=e16] [cursor=pointer]:
+        - img
+        - text: Tiếp tục với Google
+      - generic [ref=e19]: hoặc
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - text: Email
+          - textbox "Email" [ref=e23]:
+            - /placeholder: ban@email.com
+        - generic [ref=e24]:
+          - text: Mật khẩu
+          - textbox "Mật khẩu" [ref=e25]
+        - button "Đăng nhập" [ref=e26] [cursor=pointer]
+      - paragraph [ref=e27]:
+        - text: Chưa có tài khoản?
+        - button "Đăng ký ngay" [ref=e28]
+  - region "Notifications alt+T"
