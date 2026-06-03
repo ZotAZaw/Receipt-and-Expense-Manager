@@ -272,7 +272,21 @@ function GroupDetail() {
                         variant="ghost"
                         onClick={async () => {
                           if (!confirm("Xóa thành viên này?")) return;
-                          await supabase.from("group_members").delete().eq("id", m.id);
+                          const { data, error } = await supabase
+                            .from("group_members")
+                            .delete()
+                            .eq("id", m.id)
+                            .select("id");
+                          if (error) {
+                            toast.error(error.message);
+                            return;
+                          }
+                          if (!data || data.length === 0) {
+                            toast.error(
+                              "Không thể xóa: bạn không có quyền hoặc thành viên không tồn tại.",
+                            );
+                            return;
+                          }
                           qc.invalidateQueries({ queryKey: ["group-members", groupId] });
                           toast.success("Đã xóa thành viên");
                         }}
@@ -313,26 +327,19 @@ function DangerZone({
 
   const del = useMutation({
     mutationFn: async () => {
-      // Delete in FK dependency order (works whether or not FKs cascade):
-      // bill_splits -> bills -> payments -> group_members -> group.
-      const { data: billRows, error: bErr } = await supabase
-        .from("bills")
-        .select("id")
-        .eq("group_id", groupId);
-      if (bErr) throw bErr;
-      const billIds = (billRows ?? []).map((b) => b.id);
-      if (billIds.length) {
-        const { error } = await supabase.from("bill_splits").delete().in("bill_id", billIds);
-        if (error) throw error;
+      // All child tables (bills, bill_splits, payments, group_members) have
+      // ON DELETE CASCADE on their group FK, so deleting the group row removes
+      // everything in one atomic statement. Cascade bypasses child-table RLS,
+      // which the owner couldn't satisfy directly (e.g. accepted payments).
+      const { data, error } = await supabase
+        .from("groups")
+        .delete()
+        .eq("id", groupId)
+        .select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Không thể xóa nhóm: bạn không có quyền hoặc nhóm không tồn tại.");
       }
-      const { error: e1 } = await supabase.from("bills").delete().eq("group_id", groupId);
-      if (e1) throw e1;
-      const { error: e2 } = await supabase.from("payments").delete().eq("group_id", groupId);
-      if (e2) throw e2;
-      const { error: e3 } = await supabase.from("group_members").delete().eq("group_id", groupId);
-      if (e3) throw e3;
-      const { error: e4 } = await supabase.from("groups").delete().eq("id", groupId);
-      if (e4) throw e4;
     },
     onSuccess: () => {
       toast.success("Đã xóa nhóm");

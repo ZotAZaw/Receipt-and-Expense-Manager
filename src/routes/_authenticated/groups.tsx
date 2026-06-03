@@ -18,6 +18,7 @@ import {
 import { Plus, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatVND } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/groups")({
   component: GroupsPage,
@@ -46,6 +47,44 @@ function GroupsPage() {
         description: string | null;
         created_at: string;
       }>).sort((a, b) => b.created_at.localeCompare(a.created_at));
+    },
+  });
+
+  // Current user's net balance in each group (+ owed to them, - they owe).
+  const groupIds = groups.map((g) => g.id);
+  const { data: balances = {} } = useQuery<Record<string, number>>({
+    queryKey: ["group-balances", user?.id, groupIds.join(",")],
+    enabled: !!user && groupIds.length > 0,
+    queryFn: async () => {
+      const [billsRes, paysRes] = await Promise.all([
+        supabase
+          .from("bills")
+          .select("group_id, total_amount, paid_by, bill_splits(user_id, amount)")
+          .in("group_id", groupIds),
+        supabase
+          .from("payments")
+          .select("group_id, from_user, to_user, amount, status")
+          .in("group_id", groupIds),
+      ]);
+      if (billsRes.error) throw billsRes.error;
+      if (paysRes.error) throw paysRes.error;
+      const bills = billsRes.data;
+      const pays = paysRes.data;
+      const bal: Record<string, number> = {};
+      groupIds.forEach((id) => (bal[id] = 0));
+      for (const b of bills ?? []) {
+        if (b.paid_by === user!.id) bal[b.group_id] += Number(b.total_amount);
+        for (const s of (b.bill_splits as { user_id: string; amount: number }[]) ?? []) {
+          if (s.user_id === user!.id) bal[b.group_id] -= Number(s.amount);
+        }
+      }
+      for (const p of pays ?? []) {
+        if (p.status !== "accepted") continue;
+        if (p.from_user === user!.id) bal[p.group_id] += Number(p.amount);
+        if (p.to_user === user!.id) bal[p.group_id] -= Number(p.amount);
+      }
+      for (const k of Object.keys(bal)) bal[k] = Math.round(bal[k] * 100) / 100;
+      return bal;
     },
   });
 
@@ -138,10 +177,27 @@ function GroupsPage() {
             >
               <div className="font-semibold mb-1">{g.name}</div>
               {g.description && (
-                <div className="text-sm text-muted-foreground line-clamp-2">
+                <div className="text-sm text-muted-foreground line-clamp-2 mb-3">
                   {g.description}
                 </div>
               )}
+              {(() => {
+                const v = balances[g.id] ?? 0;
+                const label =
+                  v > 0 ? "Bạn được nhận" : v < 0 ? "Bạn nợ" : "Đã cân bằng";
+                return (
+                  <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span
+                      className={`font-semibold ${
+                        v > 0 ? "text-success" : v < 0 ? "text-destructive" : ""
+                      }`}
+                    >
+                      {formatVND(Math.abs(v))}
+                    </span>
+                  </div>
+                );
+              })()}
             </Link>
           ))}
         </div>
