@@ -9,13 +9,12 @@ Hệ thống quản lý chi tiêu cá nhân và nhóm được xây dựng nhằ
 * Đăng ký / Đăng nhập tài khoản
 * Quản lý thông tin cá nhân
 * Tạo và quản lý nhóm chi tiêu
-* Thêm hoặc xóa thành viên trong nhóm
+* Quản lý thành viên trong nhóm
 * Tạo khoản chi và ghi nhận người thanh toán
 * Chia chi phí theo nhiều phương thức
 * Quản lý công nợ giữa các thành viên
 * Tạo và xác nhận thanh toán
 * Thống kê và theo dõi chi tiêu
-* Đăng xuất hệ thống
 
 ---
 
